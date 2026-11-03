@@ -15,3 +15,4 @@ parse('{ "hihi": "Kroos", "id": 1 }', Out).
 # Todo
 - หาวิธีที่ทำให้ไม่ต้อง `set_prolog_flag`
 - ดู DCG
+- query language?
