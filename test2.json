@@ -1,6 +1,1 @@
-{
-  "hihi": {
-    "id": 1,
-    "name": "kroos"
-  }
-}
+{ "hihi": "Kroos", "idk": { "id": 1, "numbers": [1, 2, 3] } }
