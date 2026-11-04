@@ -36,9 +36,9 @@ token(number(N)) -->
     sign(S), % optional
     integer(IntChars),
     fraction(FracChars), % optional
-    % exp(ExpChars), % also optional
+    exponent(ExpChars), % also optional
     {
-        append([S, IntChars, FracChars], AllChars),
+        append([S, IntChars, FracChars, ExpChars], AllChars),
         number_chars(N, AllChars)
     }.
 
@@ -53,7 +53,16 @@ integer([D|Ds]) -->
 fraction(['.'|Ds]) --> ".", !, digits_plus(Ds).
 fraction([]) --> [].
 
-% TODO: exponent
+exponent([e|Cs]) -->
+    ("e" | "E"), !,
+    exponent_sign(S),
+    digits_plus(Ds),
+    { append(S, Ds, Cs) }.
+exponent([]) --> [].
+
+exponent_sign(['+']) --> "+", !.
+exponent_sign(['-']) --> "-", !.
+exponent_sign([]) --> [].
 
 digit(D) --> [D], { char_type(D, digit) }.
 digit1_9(D) --> [D], { char_type(D, digit), D \== '0' }.
@@ -95,6 +104,8 @@ parse(Source, Output) :-
     phrase(tokens(Tokens), Codes),
     % format('Tokens=~w\n', [Tokens]),
     phrase(json_value(Output), Tokens).
+
+% MARK: Main
 
 test_entry :-
     Source = '{ "hihi": "Kroos", "idk": { "id": 1, "numbers": [1, 2, 3] } }',
