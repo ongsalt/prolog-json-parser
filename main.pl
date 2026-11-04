@@ -10,9 +10,24 @@ ab --> [a], ab, [b].
 tokens([T|Ts]) --> blanks, token(T), !, tokens(Ts).
 tokens([]) --> blanks.
 
-% TODO: comment
-blanks --> [C], { char_type(C, space) }, !, blanks.
+blanks --> blank_char, !, blanks.
+blanks --> comment, !, blanks.
 blanks --> [].
+
+blank_char --> [C], { memberchk(C, [' ', '\t', '\n', '\r']) }.
+
+% MARK: Comment
+
+comment --> "//", !, line_comment_rest.
+comment --> "/*", !, block_comment_rest.
+
+% the newline itself is left for blanks. end of input also ends a line comment
+line_comment_rest --> [C], { C \== '\n' }, !, line_comment_rest.
+line_comment_rest --> [].
+
+% no clause for end of input, so an unterminated comment fails
+block_comment_rest --> "*/", !.
+block_comment_rest --> [_], block_comment_rest.
 
 token(null) --> "null".
 token(bool(true)) --> "true".
@@ -25,10 +40,40 @@ token(comma) --> ",".
 token(colon) --> ":".
 
 
-% TODO: escaped string
+% MARK: String
+
 token(string(S)) --> "\"", chars(Cs), "\"", { string_chars(S, Cs) } .
-chars([C|Cs]) --> [C], { C \== '"' }, !, chars(Cs).
+chars([C|Cs]) --> string_char(C), !, chars(Cs).
 chars([]) --> [].
+
+string_char(C) --> "\\", !, escape(C).
+string_char(C) --> [C], { C \== '"', char_code(C, Code), Code >= 0x20 }.
+
+escape('"') --> "\"".
+escape('\\') --> "\\".
+escape('/') --> "/".
+escape('\b') --> "b".
+escape('\f') --> "f".
+escape('\n') --> "n".
+escape('\r') --> "r".
+escape('\t') --> "t".
+escape(C) --> "u", hex4(First), surrogate_pair(First, Code), { char_code(C, Code) }.
+
+% characters above U+FFFF are written as two \u escapes
+surrogate_pair(High, Code) -->
+    "\\u", hex4(Low),
+    {
+        High >= 0xD800, High =< 0xDBFF,
+        Low >= 0xDC00, Low =< 0xDFFF
+    }, !,
+    { Code is 0x10000 + (High - 0xD800) * 0x400 + (Low - 0xDC00) }.
+surrogate_pair(Code, Code) --> [].
+
+hex4(N) -->
+    hex(A), hex(B), hex(C), hex(D),
+    { N is A * 0x1000 + B * 0x100 + C * 0x10 + D }.
+
+hex(Weight) --> [C], { char_type(C, xdigit(Weight)) }.
 
 % MARK: Number
 
